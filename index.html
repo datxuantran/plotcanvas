@@ -12,128 +12,58 @@
 	<body>
 		<canvas id="myCanvas" width="800" height="600"></canvas>
 		<script>
-			var canvas = document.getElementById("myCanvas");
-			var context = canvas.getContext("2d");
+			window.addEventListener("load", async function () {
+				const canvas = document.getElementById("myCanvas");
+				const offscreen = canvas.transferControlToOffscreen();
+				const worker = new Worker("offscreen_worker.js");
 
-			// Offscreen canvas
-			var offscreenCanvas = document.createElement("canvas");
-			offscreenCanvas.width = canvas.width;
-			offscreenCanvas.height = canvas.height;
-			var offscreenContext = offscreenCanvas.getContext("2d");
-
-			var scale = 1,
-				translateX = 0,
-				translateY = 0;
-
-			// Generate mock-up points
-			var points = [];
-			for (var i = 0; i < 100_000; i++) {
-				points.push({
-					x: Math.random() * 2000 - 1000,
-					y: Math.random() * 2000 - 1000,
-				});
-			}
-
-			// Initialize the quadtree
-			var quadtree = d3
-				.quadtree()
-				.x((d) => d.x)
-				.y((d) => d.y)
-				.addAll(points);
-
-			function drawPoints() {
-				offscreenContext.clearRect(
-					0,
-					0,
-					offscreenCanvas.width,
-					offscreenCanvas.height
-				);
-				offscreenContext.save();
-				offscreenContext.scale(scale, scale);
-				offscreenContext.translate(translateX, translateY);
-
-				// Calculate the visible region
-				var visibleWidth = offscreenCanvas.width / scale;
-				var visibleHeight = offscreenCanvas.height / scale;
-				var visibleRegion = {
-					x0: -translateX,
-					y0: -translateY,
-					x1: -translateX + visibleWidth,
-					y1: -translateY + visibleHeight,
-				};
-
-				// Use quadtree to find points in the visible region
-				var visiblePoints = [];
-				quadtree.visit(function (node, x1, y1, x2, y2) {
-					if (!node.length) {
-						do {
-							var d = node.data;
-							if (
-								d.x >= visibleRegion.x0 &&
-								d.x < visibleRegion.x1 &&
-								d.y >= visibleRegion.y0 &&
-								d.y < visibleRegion.y1
-							) {
-								visiblePoints.push(d);
-							}
-						} while ((node = node.next));
-					}
-					return (
-						x1 >= visibleRegion.x1 ||
-						y1 >= visibleRegion.y1 ||
-						x2 < visibleRegion.x0 ||
-						y2 < visibleRegion.y0
-					);
-				});
-
-				// Draw lines between points
-				if (visiblePoints.length > 1) {
-					offscreenContext.beginPath();
-					offscreenContext.moveTo(visiblePoints[0].x, visiblePoints[0].y);
-					visiblePoints.forEach(function (point) {
-						offscreenContext.lineTo(point.x, point.y);
+				// Generate mock-up points
+				var points = [];
+				for (var i = 0; i < 100_000; i++) {
+					points.push({
+						x: Math.random() * 2000 - 1000,
+						y: Math.random() * 2000 - 1000,
 					});
-					offscreenContext.stroke();
 				}
 
-				// Draw the visible points
-				visiblePoints.forEach(function (point) {
-					offscreenContext.beginPath();
-					offscreenContext.arc(point.x, point.y, 2, 0, 2 * Math.PI);
-					offscreenContext.fill();
+				// Post the offscreen canvas and points to the worker
+				worker.postMessage({ canvas: offscreen, points }, [offscreen]);
+
+				var scale = 1;
+				// Event listeners for zoom and pan
+				canvas.addEventListener("wheel", function (event) {
+					event.preventDefault();
+					// Calculate and send zoom data to worker
+					var scaleFactor = 1.1;
+					if (event.deltaY < 0) {
+						// Zoom in
+						scale *= scaleFactor;
+					} else {
+						// Zoom out
+						scale /= scaleFactor;
+					}
+					scale = Math.min(Math.max(1, scale), 4); // Restrict scale between 1 and 4
+					worker.postMessage({ type: "zoom", scale: scale });
+					console.debug("zoom", { scale });
 				});
 
-				offscreenContext.restore();
-
-				context.clearRect(0, 0, canvas.width, canvas.height);
-				// Copy from offscreen canvas to visible canvas
-				context.drawImage(offscreenCanvas, 0, 0);
-			}
-
-			// Add event listeners for zoom and pan
-			canvas.addEventListener("wheel", function (event) {
-				event.preventDefault();
-				var scaleFactor = 1.1;
-				if (event.deltaY < 0) {
-					// Zoom in
-					scale *= scaleFactor;
-				} else {
-					// Zoom out
-					scale /= scaleFactor;
-				}
-				scale = Math.min(Math.max(1, scale), 4); // Restrict scale between 1 and 4
-				drawPoints();
+				// var lastX = 0,
+				// lastY = 0;
+				var translateX = 0,
+					translateY = 0;
+				canvas.addEventListener("mousemove", function (event) {
+					if (event.buttons === 1) {
+						// var translateX = (event.clientX - lastX) / scale;
+						// var translateY = (event.clientY - lastY) / scale;
+						// lastX = event.clientX;
+						// lastY = event.clientY;
+						translateX += event.movementX / scale;
+						translateY += event.movementY / scale;
+						console.debug("pan", { translateX, translateY });
+						worker.postMessage({ type: "pan", translateX, translateY });
+					}
+				});
 			});
-
-			canvas.addEventListener("mousemove", function (event) {
-				if (event.buttons === 1) {
-					translateX += event.movementX / scale;
-					translateY += event.movementY / scale;
-					drawPoints();
-				}
-			});
-
-			drawPoints();
 		</script>
 	</body>
 </html>

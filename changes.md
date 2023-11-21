@@ -1,5 +1,11 @@
-3b9eda0668c237bd356482c74bf0c1056ad607eb
+3b9eda0668\237bd356482c74bf0c1056ad607eb
 
+- [\] translate
+  - [x] mouse drag
+  - [ ] touch drag
+- [\] zoom / scale
+  - [x] mouse wheel
+  - [ ] touch pinch
 - [x] min zoom set to 1, max zoom to 4
 - [x] using offscreencanvas for rendering
 
