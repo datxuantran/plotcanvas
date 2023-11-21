@@ -12,18 +12,22 @@
 	<body>
 		<canvas id="myCanvas" width="800" height="600"></canvas>
 		<script>
-			// TODO: offsreen canvas
-			// TODO: set min zoom is 1 and max zoom is 4
 			var canvas = document.getElementById("myCanvas");
 			var context = canvas.getContext("2d");
+
+			// Offscreen canvas
+			var offscreenCanvas = document.createElement("canvas");
+			offscreenCanvas.width = canvas.width;
+			offscreenCanvas.height = canvas.height;
+			var offscreenContext = offscreenCanvas.getContext("2d");
+
 			var scale = 1,
 				translateX = 0,
 				translateY = 0;
 
 			// Generate mock-up points
 			var points = [];
-			for (var i = 0; i < 10_000_000; i++) {
-				// 10_000_000 to start blocking the main thread
+			for (var i = 0; i < 100_000; i++) {
 				points.push({
 					x: Math.random() * 2000 - 1000,
 					y: Math.random() * 2000 - 1000,
@@ -38,14 +42,19 @@
 				.addAll(points);
 
 			function drawPoints() {
-				context.clearRect(0, 0, canvas.width, canvas.height);
-				context.save();
-				context.scale(scale, scale);
-				context.translate(translateX, translateY);
+				offscreenContext.clearRect(
+					0,
+					0,
+					offscreenCanvas.width,
+					offscreenCanvas.height
+				);
+				offscreenContext.save();
+				offscreenContext.scale(scale, scale);
+				offscreenContext.translate(translateX, translateY);
 
 				// Calculate the visible region
-				var visibleWidth = canvas.width / scale;
-				var visibleHeight = canvas.height / scale;
+				var visibleWidth = offscreenCanvas.width / scale;
+				var visibleHeight = offscreenCanvas.height / scale;
 				var visibleRegion = {
 					x0: -translateX,
 					y0: -translateY,
@@ -77,42 +86,49 @@
 					);
 				});
 
-				// Sort the visible points if necessary
-				// visiblePoints.sort((a, b) => a.x - b.x); // Example sorting
-
 				// Draw lines between points
 				if (visiblePoints.length > 1) {
-					context.beginPath();
-					context.moveTo(visiblePoints[0].x, visiblePoints[0].y);
+					offscreenContext.beginPath();
+					offscreenContext.moveTo(visiblePoints[0].x, visiblePoints[0].y);
 					visiblePoints.forEach(function (point) {
-						context.lineTo(point.x, point.y);
+						offscreenContext.lineTo(point.x, point.y);
 					});
-					context.stroke();
+					offscreenContext.stroke();
 				}
 
 				// Draw the visible points
 				visiblePoints.forEach(function (point) {
-					context.beginPath();
-					context.arc(point.x, point.y, 2, 0, 2 * Math.PI);
-					context.fill();
+					offscreenContext.beginPath();
+					offscreenContext.arc(point.x, point.y, 2, 0, 2 * Math.PI);
+					offscreenContext.fill();
 				});
 
-				context.restore();
+				offscreenContext.restore();
+
+				context.clearRect(0, 0, canvas.width, canvas.height);
+				// Copy from offscreen canvas to visible canvas
+				context.drawImage(offscreenCanvas, 0, 0);
 			}
 
 			// Add event listeners for zoom and pan
 			canvas.addEventListener("wheel", function (event) {
 				event.preventDefault();
-				scale += event.deltaY * -0.01;
-				scale = Math.min(Math.max(0.125, scale), 4);
+				var scaleFactor = 1.1;
+				if (event.deltaY < 0) {
+					// Zoom in
+					scale *= scaleFactor;
+				} else {
+					// Zoom out
+					scale /= scaleFactor;
+				}
+				scale = Math.min(Math.max(1, scale), 4); // Restrict scale between 1 and 4
 				drawPoints();
 			});
 
 			canvas.addEventListener("mousemove", function (event) {
 				if (event.buttons === 1) {
-					// Left mouse button
-					translateX += event.movementX;
-					translateY += event.movementY;
+					translateX += event.movementX / scale;
+					translateY += event.movementY / scale;
 					drawPoints();
 				}
 			});

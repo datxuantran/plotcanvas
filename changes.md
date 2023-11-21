@@ -1,0 +1,3 @@
+- [x] min zoom set to 1, max zoom to 4
+- [x] using offscreencanvas for rendering
+- [ ] using webworker to handling data
