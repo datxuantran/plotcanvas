@@ -9,7 +9,9 @@
 - [x] min zoom set to 1, max zoom to 4
 - [x] using offscreencanvas for rendering
 
-- [ ] using webworker to handling data
+e82d430ee6a7e69b4729600a093280b35bc03739
+
+- [x] using webworker to handling data
 - [ ] trace
   - [ ] draw trace with style
     - [ ] line
