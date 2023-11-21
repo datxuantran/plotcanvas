@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Zoomable Canvas with Lines Between Points</title>
+		<script src="https://d3js.org/d3.v6.min.js"></script>
+		<style>
+			#myCanvas {
+				border: 1px solid #000;
+			}
+		</style>
+	</head>
+	<body>
+		<canvas id="myCanvas" width="800" height="600"></canvas>
+		<script>
+			// TODO: offsreen canvas
+			// TODO: set min zoom is 1 and max zoom is 4
+			var canvas = document.getElementById("myCanvas");
+			var context = canvas.getContext("2d");
+			var scale = 1,
+				translateX = 0,
+				translateY = 0;
+
+			// Generate mock-up points
+			var points = [];
+			for (var i = 0; i < 10_000_000; i++) {
+				// 10_000_000 to start blocking the main thread
+				points.push({
+					x: Math.random() * 2000 - 1000,
+					y: Math.random() * 2000 - 1000,
+				});
+			}
+
+			// Initialize the quadtree
+			var quadtree = d3
+				.quadtree()
+				.x((d) => d.x)
+				.y((d) => d.y)
+				.addAll(points);
+
+			function drawPoints() {
+				context.clearRect(0, 0, canvas.width, canvas.height);
+				context.save();
+				context.scale(scale, scale);
+				context.translate(translateX, translateY);
+
+				// Calculate the visible region
+				var visibleWidth = canvas.width / scale;
+				var visibleHeight = canvas.height / scale;
+				var visibleRegion = {
+					x0: -translateX,
+					y0: -translateY,
+					x1: -translateX + visibleWidth,
+					y1: -translateY + visibleHeight,
+				};
+
+				// Use quadtree to find points in the visible region
+				var visiblePoints = [];
+				quadtree.visit(function (node, x1, y1, x2, y2) {
+					if (!node.length) {
+						do {
+							var d = node.data;
+							if (
+								d.x >= visibleRegion.x0 &&
+								d.x < visibleRegion.x1 &&
+								d.y >= visibleRegion.y0 &&
+								d.y < visibleRegion.y1
+							) {
+								visiblePoints.push(d);
+							}
+						} while ((node = node.next));
+					}
+					return (
+						x1 >= visibleRegion.x1 ||
+						y1 >= visibleRegion.y1 ||
+						x2 < visibleRegion.x0 ||
+						y2 < visibleRegion.y0
+					);
+				});
+
+				// Sort the visible points if necessary
+				// visiblePoints.sort((a, b) => a.x - b.x); // Example sorting
+
+				// Draw lines between points
+				if (visiblePoints.length > 1) {
+					context.beginPath();
+					context.moveTo(visiblePoints[0].x, visiblePoints[0].y);
+					visiblePoints.forEach(function (point) {
+						context.lineTo(point.x, point.y);
+					});
+					context.stroke();
+				}
+
+				// Draw the visible points
+				visiblePoints.forEach(function (point) {
+					context.beginPath();
+					context.arc(point.x, point.y, 2, 0, 2 * Math.PI);
+					context.fill();
+				});
+
+				context.restore();
+			}
+
+			// Add event listeners for zoom and pan
+			canvas.addEventListener("wheel", function (event) {
+				event.preventDefault();
+				scale += event.deltaY * -0.01;
+				scale = Math.min(Math.max(0.125, scale), 4);
+				drawPoints();
+			});
+
+			canvas.addEventListener("mousemove", function (event) {
+				if (event.buttons === 1) {
+					// Left mouse button
+					translateX += event.movementX;
+					translateY += event.movementY;
+					drawPoints();
+				}
+			});
+
+			drawPoints();
+		</script>
+	</body>
+</html>
