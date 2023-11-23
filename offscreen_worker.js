@@ -20,8 +20,9 @@ function stream() {
 		.range([0, canvas.width]);
 	const scaleY = d3.scaleLinear().domain([0, ymax]).range([0, canvas.height]);
 	const points = [];
+	const wavelength = 300; // adjust the wavelength to control the oscillation
 	for (let i = 0; i < NUM_POINTS; i++) {
-		const y = (Math.sin(i) * ymax) / 2 + ymax / 2;
+		const y = (Math.sin((i / NUM_POINTS) * wavelength) * ymax) / 2 + ymax / 2;
 		points.push({
 			x: scaleX(i),
 			y: -scaleY(y),
@@ -84,7 +85,18 @@ function draw() {
 
 	// draw origin
 	drawOrigin();
+
+	// last point to check if entire plot
+	// is draw and stretch to fit the canvas
+	drawPoint(points[points.length - 1]);
 	context.translate(-origin.translateX, -origin.translateY);
+}
+
+function drawPoint(point) {
+	context.beginPath();
+	context.arc(point.x, point.y, 5, 0, 2 * Math.PI, false);
+	context.fillStyle = "red";
+	context.fill();
 }
 
 function drawOrigin() {
