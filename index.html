@@ -17,17 +17,8 @@
 				const offscreen = canvas.transferControlToOffscreen();
 				const worker = new Worker("offscreen_worker.js");
 
-				// Generate mock-up points
-				var points = [];
-				for (var i = 0; i < 100_000; i++) {
-					points.push({
-						x: Math.random() * 2000 - 1000,
-						y: Math.random() * 2000 - 1000,
-					});
-				}
-
 				// Post the offscreen canvas and points to the worker
-				worker.postMessage({ canvas: offscreen, points }, [offscreen]);
+				worker.postMessage({ canvas: offscreen }, [offscreen]);
 
 				var scale = 1;
 				// Event listeners for zoom and pan

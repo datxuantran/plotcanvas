@@ -9,7 +9,7 @@ self.onmessage = function (e) {
 		console.debug("initialize", e.data);
 		canvas = e.data.canvas;
 		context = canvas.getContext("2d");
-		initialize(e.data.points);
+		initialize();
 	} else {
 		// Handle zoom and pan updates
 		console.debug("updateTransform", e.data);
@@ -22,7 +22,15 @@ var quadtree,
 	translateX = 0,
 	translateY = 0;
 
-function initialize(points) {
+function initialize() {
+	// Generate mock-up points
+	var points = [];
+	for (var i = 0; i < 100_000; i++) {
+		points.push({
+			x: Math.random() * 2000 - 1000,
+			y: Math.random() * 2000 - 1000,
+		});
+	}
 	// Initialize the quadtree with the provided points
 	quadtree = d3
 		.quadtree()
