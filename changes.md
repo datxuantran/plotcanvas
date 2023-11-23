@@ -12,6 +12,10 @@
 e82d430ee6a7e69b4729600a093280b35bc03739
 
 - [x] using webworker to handling data
+- [ ] fit the plot inside the canvas
+  - [ ] object coordinate => canvas coordinate
+    - [x] object coordinate = [xmin, xmax, ymin, ymax]
+    - [x] canvas coordinate = [xmin, xmax, ymin, ymax]
 - [ ] trace
   - [ ] draw trace with style
     - [ ] line

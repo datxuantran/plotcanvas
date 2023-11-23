@@ -1,132 +1,60 @@
 importScripts("d3.v6.min.js.js"); // Replace with the actual path to d3.js
-
 let canvas = null;
 let context = null;
-// Generate mock-up points
-var initPoints = [];
-for (var i = 0; i < 100_000; i++) {
-	initPoints.push({
-		x: Math.random() * 2000 - 1000,
-		y: Math.random() * 2000 - 1000,
-	});
-}
-// offscreen_worker.js
-self.onmessage = function (e) {
-	if (e.data.canvas) {
-		// Canvas setup and initial drawing
-		console.debug("initialize", e.data);
-		canvas = e.data.canvas;
+self.onmessage = function (event) {
+	if (!!event.data.canvas) {
+		canvas = event.data.canvas;
 		context = canvas.getContext("2d");
-		initialize(stream());
+		console.log("Canvas received");
 	} else {
-		// Handle zoom and pan updates
-		console.debug("updateTransform", e.data);
-		updateTransform(e.data);
+		draw();
 	}
 };
 
-// var worldScale = 1 / Math.max(canvas.width, canvas.height);
-// console.log("worldScale", worldScale);
-
+const NUM_POINTS = 4096;
 const stream = () => {
+	const timestampt = Date.now();
 	const points = [];
-	for (let i = 0; i < 4096; i++) {
-		const x = i;
-		const y = Math.sin((i / 4096) * 2 * Math.PI) * 1000;
+	for (let i = 0; i < NUM_POINTS; i++) {
 		points.push({
-			x: x,
-			y: y,
+			x: i,
+			y: Math.sin(i / 100) * 100,
 		});
 	}
 	return points;
 };
 
-var quadtree,
-	scale = 1,
-	translateX = 0,
-	translateY = 0;
-
-function initialize(points) {
-	// Initialize the quadtree with the provided points
-	quadtree = d3
-		.quadtree()
-		.x((d) => d.x)
-		.y((d) => d.y)
-		.addAll(points);
-
-	drawPoints(); // Initial drawing
-}
-
-function updateTransform(data) {
-	if (data.type === "zoom") {
-		scale = data.scale;
-		console.debug("zoom", { scale });
-	} else if (data.type === "pan") {
-		translateX = data.translateX;
-		translateY = data.translateY;
-		console.debug("pan", { translateX, translateY });
+// todo: add a function to convert object to world coordinates
+const objectToWorld = (points) => {
+	const xmin_o = 0;
+	const xmax_o = NUM_POINTS;
+	const ymin_o = -100;
+	const ymax_o = 100;
+	const xmin_w = 0;
+	const xmax_w = canvas.width;
+	const ymin_w = 0;
+	const ymax_w = canvas.height;
+	const x_w = (x_o) => x_o * ((xmax_w - xmin_w) / (xmax_o - xmin_o)) + xmin_w;
+	const y_w = (y_o) => y_o * ((ymax_w - ymin_w) / (ymax_o - ymin_o)) + ymin_w;
+	for (let i = 0; i < points.length; i++) {
+		points[i].x = x_w(points[i].x);
+		points[i].y = y_w(points[i].y) + 300;
 	}
-	drawPoints(); // Redraw after transformation update
-}
+	return points;
+};
 
-function drawPoints() {
+const draw = () => {
 	context.clearRect(0, 0, canvas.width, canvas.height);
-	context.save();
-	context.scale(scale, scale);
-	context.translate(translateX, translateY);
+	points = stream();
+	points = objectToWorld(points);
+	console.log(points);
 
-	// Implement the rest of the drawing logic
-
-	var visibleWidth = canvas.width / scale;
-	var visibleHeight = canvas.height / scale;
-	var visibleRegion = {
-		x0: -translateX,
-		y0: -translateY,
-		x1: -translateX + visibleWidth,
-		y1: -translateY + visibleHeight,
-	};
-
-	// Use quadtree to find points in the visible region
-	var visiblePoints = [];
-	quadtree.visit(function (node, x1, y1, x2, y2) {
-		if (!node.length) {
-			do {
-				var d = node.data;
-				if (
-					d.x >= visibleRegion.x0 &&
-					d.x < visibleRegion.x1 &&
-					d.y >= visibleRegion.y0 &&
-					d.y < visibleRegion.y1
-				) {
-					visiblePoints.push(d);
-				}
-			} while ((node = node.next));
-		}
-		return (
-			x1 >= visibleRegion.x1 ||
-			y1 >= visibleRegion.y1 ||
-			x2 < visibleRegion.x0 ||
-			y2 < visibleRegion.y0
-		);
+	context.beginPath();
+	context.moveTo(points[0].x, points[0].y);
+	points.forEach((point) => {
+		context.lineTo(point.x, point.y);
 	});
-
-	// Draw lines between points
-	if (visiblePoints.length > 1) {
-		context.beginPath();
-		context.moveTo(visiblePoints[0].x, visiblePoints[0].y);
-		visiblePoints.forEach(function (point) {
-			// make gradient color
-			context.lineTo(point.x, point.y);
-		});
-		context.stroke();
-	}
-
-	// Draw the visible points
-	visiblePoints.forEach(function (point) {
-		context.beginPath();
-		context.arc(point.x, point.y, 2, 0, 2 * Math.PI);
-		context.fill();
-	});
-
-	context.restore();
-}
+	context.lineWidth = 1;
+	context.strokeStyle = "black";
+	context.stroke();
+};
