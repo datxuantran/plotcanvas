@@ -126,7 +126,6 @@ function drawOrigin() {
 	plotContext.fill();
 }
 
-// console.log(stream().points);
 function drawSpectrum() {
 	spectrumContext.clearRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
 	const { points, xmax } = stream();
@@ -137,7 +136,6 @@ function drawSpectrum() {
 	for (let i = 0; i < points.length; i++) {
 		const point = points[i];
 		spectrumContext.beginPath();
-		// spectrumContext.arc(scaleX(point.x), 0, 1, 0, 2 * Math.PI, false);
 		spectrumContext.rect(scaleX(point.x), 0, 1, 20);
 		spectrumContext.fillStyle = point.color;
 		spectrumContext.fill();
