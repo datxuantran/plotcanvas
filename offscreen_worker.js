@@ -126,7 +126,9 @@ function drawOrigin() {
 	plotContext.fill();
 }
 
+let prevSpectrumImageData = null;
 function drawSpectrum() {
+	// draw new spectrum
 	const width = 1,
 		height = 20;
 	spectrumContext.clearRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
@@ -143,9 +145,13 @@ function drawSpectrum() {
 		spectrumContext.fill();
 	}
 
-	spectrumCanvas.convertToBlob().then((blob) => {
-		const url = URL.createObjectURL(blob);
-		const msg = { type: "spectrum", url: url };
-		self.postMessage(msg);
-	});
+	if (!!prevSpectrumImageData) {
+		spectrumContext.putImageData(prevSpectrumImageData, 0, height);
+	}
+	prevSpectrumImageData = spectrumContext.getImageData(
+		0,
+		0,
+		spectrumCanvas.width,
+		spectrumCanvas.height
+	);
 }

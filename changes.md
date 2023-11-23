@@ -25,4 +25,6 @@ e82d430ee6a7e69b4729600a093280b35bc03739
     - [ ] label
 - [ ] todo: understand the wavelength
 - [x] spectrum
-  - [ ] draw multiple line spectrums, base on the data change
+  - [x] draw multiple line spectrums, base on the data change
+    - [x] always draw new line at start
+    - [x] from start, put prev spectrum
