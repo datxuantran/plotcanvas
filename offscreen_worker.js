@@ -13,20 +13,42 @@ self.onmessage = function (event) {
 };
 
 function stream() {
+	const ymax = 100;
 	const scaleX = d3
 		.scaleLinear()
 		.domain([0, NUM_POINTS])
 		.range([0, canvas.width]);
-	const scaleY = d3.scaleLinear().domain([0, 100]).range([0, canvas.height]);
+	const scaleY = d3.scaleLinear().domain([0, ymax]).range([0, canvas.height]);
 	const points = [];
 	for (let i = 0; i < NUM_POINTS; i++) {
-		const y = Math.random() * 100;
+		const y = (Math.sin(i) * ymax) / 2 + ymax / 2;
 		points.push({
 			x: scaleX(i),
 			y: -scaleY(y),
+			color: getColor(y, ymax),
 		});
 	}
 	return points;
+}
+
+function getColor(h, hmax) {
+	const colors = [
+		[0, 0, 255], //blue
+		[0, 255, 0], //green
+		[255, 255, 0], //yellow
+		[255, 165, 0], //orange
+		[255, 0, 0], //red
+	];
+	const colorSegments = colors.length - 1; // Number of segments between stops
+	const segmentSize = hmax / colorSegments;
+	const segmentIndex = Math.floor(h / segmentSize);
+	const fraction = (h % segmentSize) / segmentSize;
+	const startColor = colors[segmentIndex];
+	const endColor = colors[segmentIndex + 1];
+	const r = Math.round(startColor[0] + fraction * (endColor[0] - startColor[0]));
+	const g = Math.round(startColor[1] + fraction * (endColor[1] - startColor[1]));
+	const b = Math.round(startColor[2] + fraction * (endColor[2] - startColor[2]));
+	return `rgb(${r},${g},${b})`;
 }
 
 function draw() {
@@ -37,28 +59,37 @@ function draw() {
 	};
 	context.translate(origin.translateX, origin.translateY);
 
+	let prevPoint = null;
 	points = stream();
-	context.beginPath();
-	context.moveTo(points[0].x, points[0].y);
-	points.forEach((point) => {
-		context.lineTo(point.x, point.y);
-	});
-	context.lineWidth = 1;
-	context.strokeStyle = "black";
-	context.stroke();
+	for (let i = 0; i < points.length; i++) {
+		const point = points[i];
+		if (prevPoint) {
+			const gradient = context.createLinearGradient(
+				prevPoint.x,
+				prevPoint.y,
+				point.x,
+				point.y
+			);
+			gradient.addColorStop(0, prevPoint.color);
+			gradient.addColorStop(1, point.color);
+			context.strokeStyle = gradient;
+			context.beginPath();
+			context.moveTo(prevPoint.x, prevPoint.y);
+			context.lineTo(point.x, point.y);
+			context.lineWidth = 1;
+			context.stroke();
+		}
+		prevPoint = point;
+	}
 
+	// draw origin
+	drawOrigin();
+	context.translate(-origin.translateX, -origin.translateY);
+}
+
+function drawOrigin() {
 	context.beginPath();
 	context.arc(0, 0, 5, 0, 2 * Math.PI, false);
 	context.fillStyle = "green";
 	context.fill();
-
-	// last point to check if entire plot is drawn
-	// and stretch to fit the canvas
-	const lastPoint = points[points.length - 1];
-	context.beginPath();
-	context.arc(lastPoint.x, lastPoint.y, 5, 0, 2 * Math.PI, false);
-	context.fillStyle = "red";
-	context.fill();
-
-	context.translate(-origin.translateX, -origin.translateY);
 }

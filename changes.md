@@ -15,12 +15,9 @@ e82d430ee6a7e69b4729600a093280b35bc03739
 - [x] fit the plot object inside the canvas
   - [x] object coordinate = [xmin, xmax, ymin, ymax]
   - [x] canvas coordinate = [xmin, xmax, ymin, ymax]
-- [ ] trace
-  - [ ] draw trace with style
-    - [ ] line
-    - [ ] scatter
-    - [ ] line + markers
-  - [ ] draw spectrum trace with color gradient for each points
+- [x] trace
+  - [x] calculate the color for each point
+  - [x] draw traces with color gradient
 - [ ] layout
   - [ ] axes
     - [ ] tick
