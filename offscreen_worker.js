@@ -12,6 +12,7 @@ self.onmessage = function (event) {
 	}
 };
 
+let time = 0; // Global time variable
 function stream() {
 	const ymax = 100;
 	const scaleX = d3
@@ -22,13 +23,15 @@ function stream() {
 	const points = [];
 	const wavelength = 300; // adjust the wavelength to control the oscillation
 	for (let i = 0; i < NUM_POINTS; i++) {
-		const y = (Math.sin((i / NUM_POINTS) * wavelength) * ymax) / 2 + ymax / 2;
+		const y =
+			(Math.sin(((i + time) / NUM_POINTS) * wavelength) * ymax) / 2 + ymax / 2;
 		points.push({
 			x: scaleX(i),
 			y: -scaleY(y),
 			color: getColor(y, ymax),
 		});
 	}
+	time++;
 	return points;
 }
 
