@@ -2,6 +2,14 @@ importScripts("d3.v6.min.js.js"); // Replace with the actual path to d3.js
 
 let canvas = null;
 let context = null;
+// Generate mock-up points
+var initPoints = [];
+for (var i = 0; i < 100_000; i++) {
+	initPoints.push({
+		x: Math.random() * 2000 - 1000,
+		y: Math.random() * 2000 - 1000,
+	});
+}
 // offscreen_worker.js
 self.onmessage = function (e) {
 	if (e.data.canvas) {
@@ -9,7 +17,7 @@ self.onmessage = function (e) {
 		console.debug("initialize", e.data);
 		canvas = e.data.canvas;
 		context = canvas.getContext("2d");
-		initialize();
+		initialize(stream());
 	} else {
 		// Handle zoom and pan updates
 		console.debug("updateTransform", e.data);
@@ -17,20 +25,28 @@ self.onmessage = function (e) {
 	}
 };
 
+// var worldScale = 1 / Math.max(canvas.width, canvas.height);
+// console.log("worldScale", worldScale);
+
+const stream = () => {
+	const points = [];
+	for (let i = 0; i < 4096; i++) {
+		const x = i;
+		const y = Math.sin((i / 4096) * 2 * Math.PI) * 1000;
+		points.push({
+			x: x,
+			y: y,
+		});
+	}
+	return points;
+};
+
 var quadtree,
 	scale = 1,
 	translateX = 0,
 	translateY = 0;
 
-function initialize() {
-	// Generate mock-up points
-	var points = [];
-	for (var i = 0; i < 100_000; i++) {
-		points.push({
-			x: Math.random() * 2000 - 1000,
-			y: Math.random() * 2000 - 1000,
-		});
-	}
+function initialize(points) {
 	// Initialize the quadtree with the provided points
 	quadtree = d3
 		.quadtree()
@@ -99,6 +115,7 @@ function drawPoints() {
 		context.beginPath();
 		context.moveTo(visiblePoints[0].x, visiblePoints[0].y);
 		visiblePoints.forEach(function (point) {
+			// make gradient color
 			context.lineTo(point.x, point.y);
 		});
 		context.stroke();
