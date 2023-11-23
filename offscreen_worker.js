@@ -1,54 +1,40 @@
 importScripts("d3.v6.min.js.js"); // Replace with the actual path to d3.js
+const NUM_POINTS = 4096;
 let canvas = null;
 let context = null;
 self.onmessage = function (event) {
 	if (!!event.data.canvas) {
 		canvas = event.data.canvas;
 		context = canvas.getContext("2d");
-		console.log("Canvas received");
+		console.debug("Canvas received", { canvas, context });
 	} else {
 		draw();
 	}
 };
 
-const NUM_POINTS = 4096;
 const stream = () => {
-	const timestampt = Date.now();
 	const points = [];
 	for (let i = 0; i < NUM_POINTS; i++) {
+		const y = Math.random() * 100;
 		points.push({
 			x: i,
-			y: Math.sin(i / 100) * 100,
+			y: -y,
 		});
 	}
 	return points;
 };
 
-// todo: add a function to convert object to world coordinates
-const objectToWorld = (points) => {
-	const xmin_o = 0;
-	const xmax_o = NUM_POINTS;
-	const ymin_o = -100;
-	const ymax_o = 100;
-	const xmin_w = 0;
-	const xmax_w = canvas.width;
-	const ymin_w = 0;
-	const ymax_w = canvas.height;
-	const x_w = (x_o) => x_o * ((xmax_w - xmin_w) / (xmax_o - xmin_o)) + xmin_w;
-	const y_w = (y_o) => y_o * ((ymax_w - ymin_w) / (ymax_o - ymin_o)) + ymin_w;
-	for (let i = 0; i < points.length; i++) {
-		points[i].x = x_w(points[i].x);
-		points[i].y = y_w(points[i].y) + 300;
-	}
-	return points;
-};
-
-const draw = () => {
+function draw() {
 	context.clearRect(0, 0, canvas.width, canvas.height);
-	points = stream();
-	points = objectToWorld(points);
-	console.log(points);
 
+	const origin = {
+		translateX: 0,
+		translateY: canvas.height,
+	};
+
+	context.translate(origin.translateX, origin.translateY);
+
+	points = stream();
 	context.beginPath();
 	context.moveTo(points[0].x, points[0].y);
 	points.forEach((point) => {
@@ -57,4 +43,11 @@ const draw = () => {
 	context.lineWidth = 1;
 	context.strokeStyle = "black";
 	context.stroke();
-};
+
+	context.beginPath();
+	context.arc(0, 0, 5, 0, 2 * Math.PI, false);
+	context.fillStyle = "green";
+	context.fill();
+
+	context.translate(-origin.translateX, -origin.translateY);
+}

@@ -10,7 +10,7 @@
 		</style>
 	</head>
 	<body>
-		<canvas id="myCanvas" width="800" height="600"></canvas>
+		<canvas id="myCanvas" width="4096" height="600"></canvas>
 		<script>
 			window.addEventListener("load", async function () {
 				const canvas = document.getElementById("myCanvas");
@@ -22,7 +22,7 @@
 
 				const update = setInterval(() => {
 					worker.postMessage({ update: true });
-				}, 1000);
+				}, 3000);
 			});
 		</script>
 	</body>
