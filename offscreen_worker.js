@@ -1,38 +1,47 @@
 importScripts("d3.v6.min.js.js"); // Replace with the actual path to d3.js
+
 const NUM_POINTS = 4096;
-let canvas = null;
-let context = null;
+let plotCanvas = null;
+let plotContext = null;
+let spectrumCanvas = null;
+let spectrumContext = null;
 self.onmessage = function (event) {
-	if (!!event.data.canvas) {
-		canvas = event.data.canvas;
-		context = canvas.getContext("2d");
-		console.debug("Canvas received", { canvas, context });
-	} else {
-		draw();
+	if (event.data.type === "plotCanvas") {
+		plotCanvas = event.data.canvas;
+		plotContext = plotCanvas.getContext("2d");
+		console.debug("Plot Canvas received", {
+			plotCanvas: plotCanvas,
+			plotContext: plotContext,
+		});
+	} else if (event.data.type === "spectrumCanvas") {
+		spectrumCanvas = event.data.canvas;
+		spectrumContext = spectrumCanvas.getContext("2d");
+		console.debug("Spectrum Canvas received", {
+			spectrumCanvas: spectrumCanvas,
+			spectrumContext: spectrumContext,
+		});
+	} else if (event.data.type === "update") {
+		drawPlot();
+		drawSpectrum();
 	}
 };
 
 let time = 0; // Global time variable
 function stream() {
 	const ymax = 100;
-	const scaleX = d3
-		.scaleLinear()
-		.domain([0, NUM_POINTS])
-		.range([0, canvas.width]);
-	const scaleY = d3.scaleLinear().domain([0, ymax]).range([0, canvas.height]);
+	const xmax = NUM_POINTS;
 	const points = [];
 	const wavelength = 300; // adjust the wavelength to control the oscillation
-	for (let i = 0; i < NUM_POINTS; i++) {
-		const y =
-			(Math.sin(((i + time) / NUM_POINTS) * wavelength) * ymax) / 2 + ymax / 2;
+	for (let x = 0; x < xmax; x++) {
+		const y = (Math.sin(((x + time) / xmax) * wavelength) * ymax) / 2 + ymax / 2;
 		points.push({
-			x: scaleX(i),
-			y: -scaleY(y),
+			x,
+			y,
 			color: getColor(y, ymax),
 		});
 	}
 	time++;
-	return points;
+	return { ymax, points, xmax };
 }
 
 function getColor(h, hmax) {
@@ -55,20 +64,30 @@ function getColor(h, hmax) {
 	return `rgb(${r},${g},${b})`;
 }
 
-function draw() {
-	context.clearRect(0, 0, canvas.width, canvas.height);
+function drawPlot() {
+	plotContext.clearRect(0, 0, plotCanvas.width, plotCanvas.height);
 	const origin = {
 		translateX: 0,
-		translateY: canvas.height,
+		translateY: plotCanvas.height,
 	};
-	context.translate(origin.translateX, origin.translateY);
+	plotContext.translate(origin.translateX, origin.translateY);
 
 	let prevPoint = null;
-	points = stream();
+	const { points, ymax } = stream();
+	const scaleX = d3
+		.scaleLinear()
+		.domain([0, NUM_POINTS])
+		.range([0, plotCanvas.width]);
+	const scaleY = d3
+		.scaleLinear()
+		.domain([0, ymax])
+		.range([0, plotCanvas.height]);
 	for (let i = 0; i < points.length; i++) {
 		const point = points[i];
+		point.x = scaleX(point.x);
+		point.y = -scaleY(point.y);
 		if (prevPoint) {
-			const gradient = context.createLinearGradient(
+			const gradient = plotContext.createLinearGradient(
 				prevPoint.x,
 				prevPoint.y,
 				point.x,
@@ -76,35 +95,51 @@ function draw() {
 			);
 			gradient.addColorStop(0, prevPoint.color);
 			gradient.addColorStop(1, point.color);
-			context.strokeStyle = gradient;
-			context.beginPath();
-			context.moveTo(prevPoint.x, prevPoint.y);
-			context.lineTo(point.x, point.y);
-			context.lineWidth = 1;
-			context.stroke();
+			plotContext.strokeStyle = gradient;
+			plotContext.beginPath();
+			plotContext.moveTo(prevPoint.x, prevPoint.y);
+			plotContext.lineTo(point.x, point.y);
+			plotContext.lineWidth = 1;
+			plotContext.stroke();
 		}
 		prevPoint = point;
 	}
-
 	// draw origin
 	drawOrigin();
-
 	// last point to check if entire plot
 	// is draw and stretch to fit the canvas
-	drawPoint(points[points.length - 1]);
-	context.translate(-origin.translateX, -origin.translateY);
+	drawPoint(points[points.length - 1], "red");
+	plotContext.translate(-origin.translateX, -origin.translateY);
 }
 
-function drawPoint(point) {
-	context.beginPath();
-	context.arc(point.x, point.y, 5, 0, 2 * Math.PI, false);
-	context.fillStyle = "red";
-	context.fill();
+function drawPoint(point, color) {
+	plotContext.beginPath();
+	plotContext.arc(point.x, point.y, 5, 0, 2 * Math.PI, false);
+	plotContext.fillStyle = color;
+	plotContext.fill();
 }
 
 function drawOrigin() {
-	context.beginPath();
-	context.arc(0, 0, 5, 0, 2 * Math.PI, false);
-	context.fillStyle = "green";
-	context.fill();
+	plotContext.beginPath();
+	plotContext.arc(0, 0, 5, 0, 2 * Math.PI, false);
+	plotContext.fillStyle = "green";
+	plotContext.fill();
+}
+
+// console.log(stream().points);
+function drawSpectrum() {
+	spectrumContext.clearRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
+	const { points, xmax } = stream();
+	const scaleX = d3
+		.scaleLinear()
+		.domain([0, xmax])
+		.range([0, spectrumCanvas.width]);
+	for (let i = 0; i < points.length; i++) {
+		const point = points[i];
+		spectrumContext.beginPath();
+		// spectrumContext.arc(scaleX(point.x), 0, 1, 0, 2 * Math.PI, false);
+		spectrumContext.rect(scaleX(point.x), 0, 1, 20);
+		spectrumContext.fillStyle = point.color;
+		spectrumContext.fill();
+	}
 }

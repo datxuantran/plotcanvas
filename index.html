@@ -4,24 +4,43 @@
 		<title>Zoomable Canvas with Lines Between Points</title>
 		<script src="https://d3js.org/d3.v6.min.js"></script>
 		<style>
-			#myCanvas {
+			#plotCanvas {
 				border: 1px solid #000;
+			}
+			#spectrumCanvas {
+				border: 1px solid #000;
+			}
+			#container {
+				width: 1000px;
+				margin: 0 auto;
 			}
 		</style>
 	</head>
 	<body>
-		<canvas id="myCanvas" width="1000" height="200"></canvas>
+		<div id="container">
+			<canvas id="plotCanvas" width="1000" height="200"></canvas>
+			<canvas id="spectrumCanvas" width="1000" height="800"></canvas>
+		</div>
 		<script>
 			window.addEventListener("load", async function () {
-				const canvas = document.getElementById("myCanvas");
-				const offscreen = canvas.transferControlToOffscreen();
+				const plotCanvas = document.getElementById("plotCanvas");
+				const offscreenPlotCanvas = plotCanvas.transferControlToOffscreen();
 				const worker = new Worker("offscreen_worker.js");
 
 				// Post the offscreen canvas and points to the worker
-				worker.postMessage({ canvas: offscreen }, [offscreen]);
+				worker.postMessage({ type: "plotCanvas", canvas: offscreenPlotCanvas }, [
+					offscreenPlotCanvas,
+				]);
+
+				const spectrumCanvas = document.getElementById("spectrumCanvas");
+				const offscreenSpectrumCanvas = spectrumCanvas.transferControlToOffscreen();
+				worker.postMessage(
+					{ type: "spectrumCanvas", canvas: offscreenSpectrumCanvas },
+					[offscreenSpectrumCanvas]
+				);
 
 				const update = setInterval(() => {
-					worker.postMessage({ update: true });
+					worker.postMessage({ type: "update" });
 				}, 100);
 			});
 		</script>
