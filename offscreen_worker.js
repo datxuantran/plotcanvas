@@ -127,6 +127,8 @@ function drawOrigin() {
 }
 
 function drawSpectrum() {
+	const width = 1,
+		height = 20;
 	spectrumContext.clearRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
 	const { points, xmax } = stream();
 	const scaleX = d3
@@ -136,8 +138,14 @@ function drawSpectrum() {
 	for (let i = 0; i < points.length; i++) {
 		const point = points[i];
 		spectrumContext.beginPath();
-		spectrumContext.rect(scaleX(point.x), 0, 1, 20);
+		spectrumContext.rect(scaleX(point.x), 0, width, height);
 		spectrumContext.fillStyle = point.color;
 		spectrumContext.fill();
 	}
+
+	spectrumCanvas.convertToBlob().then((blob) => {
+		const url = URL.createObjectURL(blob);
+		const msg = { type: "spectrum", url: url };
+		self.postMessage(msg);
+	});
 }
