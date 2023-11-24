@@ -5,6 +5,7 @@ let plotCanvas = null;
 let plotContext = null;
 let spectrumCanvas = null;
 let spectrumContext = null;
+let animationStared = false;
 self.onmessage = function (event) {
 	if (event.data.type === "plotCanvas") {
 		plotCanvas = event.data.canvas;
@@ -20,9 +21,11 @@ self.onmessage = function (event) {
 			spectrumCanvas: spectrumCanvas,
 			spectrumContext: spectrumContext,
 		});
-	} else if (event.data.type === "update") {
-		drawPlot();
-		drawSpectrum();
+	}
+	const ready = !!plotCanvas && !!spectrumCanvas;
+	if (!animationStared && ready) {
+		draw();
+		animationStared = true;
 	}
 };
 
@@ -154,4 +157,12 @@ function drawSpectrum() {
 		spectrumCanvas.width,
 		spectrumCanvas.height
 	);
+}
+
+function draw() {
+	// Call the existing drawing functions
+	drawPlot();
+	drawSpectrum();
+	// Right before the next paint, trigger another redraw & rotation.
+	requestAnimationFrame(draw);
 }
