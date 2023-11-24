@@ -29,6 +29,10 @@ e82d430ee6a7e69b4729600a093280b35bc03739
     - [x] always draw new line at start
     - [x] from start, put prev spectrum
 - [ ] theme
+
   - [ ] dark
   - [ ] light
+
+- [x] requestAnimationFrame
+- [ ] adding statjs to measure performance
 - [ ] scroll speed

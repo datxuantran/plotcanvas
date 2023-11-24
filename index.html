@@ -3,6 +3,7 @@
 	<head>
 		<title>Zoomable Canvas with Lines Between Points</title>
 		<script src="https://d3js.org/d3.v6.min.js"></script>
+		<script src="https://mrdoob.github.io/stats.js/build/stats.min.js"></script>
 		<style>
 			#plotCanvas {
 				border: 1px solid #000;
@@ -43,6 +44,25 @@
 				const update = setInterval(() => {
 					worker.postMessage({ type: "update" });
 				}, 100);
+
+				// FPS tracking
+				const fpsDisplay = document.createElement("div"); // Display element for FPS
+				fpsDisplay.style.width = "100px";
+				fpsDisplay.style.height = "50px";
+				fpsDisplay.style.position = "absolute";
+				fpsDisplay.style.top = "0px";
+				fpsDisplay.style.left = "0px";
+				fpsDisplay.style.color = "white";
+				fpsDisplay.style.fontSize = "20px";
+				fpsDisplay.style.fontFamily = "Arial";
+				fpsDisplay.style.textAlign = "center";
+				fpsDisplay.style.backgroundColor = "black";
+				document.body.appendChild(fpsDisplay);
+				worker.addEventListener("message", (event) => {
+					if (event.data.type === "fps") {
+						fpsDisplay.innerHTML = event.data.fps.toFixed(2) + " FPS";
+					}
+				});
 			});
 		</script>
 	</body>

@@ -24,10 +24,43 @@ self.onmessage = function (event) {
 	}
 	const ready = !!plotCanvas && !!spectrumCanvas;
 	if (!animationStared && ready) {
-		draw();
+		animate();
 		animationStared = true;
 	}
 };
+
+var lastTime = (performance || Date).now();
+var frameCount = 0;
+// var fpsDisplay = document.createElement("div"); // Display element for FPS
+// document.body.appendChild(fpsDisplay);
+
+function beginFrame() {
+	// This would be empty in a minimal setup
+}
+
+function endFrame() {
+	frameCount++;
+	var currentTime = (performance || Date).now();
+	if (currentTime >= lastTime + 1000) {
+		// Check if a second has passed
+		var fps = frameCount;
+		frameCount = 0;
+		lastTime = currentTime;
+
+		// Update display
+		self.postMessage({ type: "fps", fps: fps });
+	}
+}
+
+function animate() {
+	beginFrame();
+	// monitored code goes here
+	drawPlot();
+	drawSpectrum();
+	endFrame();
+	// Right before the next paint, trigger another redraw & rotation.
+	requestAnimationFrame(animate);
+}
 
 let time = 0; // Global time variable
 function stream() {
@@ -157,12 +190,4 @@ function drawSpectrum() {
 		spectrumCanvas.width,
 		spectrumCanvas.height
 	);
-}
-
-function draw() {
-	// Call the existing drawing functions
-	drawPlot();
-	drawSpectrum();
-	// Right before the next paint, trigger another redraw & rotation.
-	requestAnimationFrame(draw);
 }
