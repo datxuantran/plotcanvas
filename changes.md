@@ -34,5 +34,5 @@ e82d430ee6a7e69b4729600a093280b35bc03739
   - [ ] light
 
 - [x] requestAnimationFrame
-- [ ] adding statjs to measure performance
+- [x] adding statjs to measure performance
 - [ ] scroll speed

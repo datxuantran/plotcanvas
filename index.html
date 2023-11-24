@@ -16,6 +16,23 @@
 				margin: 0 auto;
 				background-color: black;
 			}
+			#fpsDisplay {
+				width: 100px;
+				position: absolute;
+				top: 0px;
+				left: 0px;
+				color: white;
+				font-size: 20px;
+				font-family: Arial;
+				text-align: center;
+				background-color: black;
+			}
+			#secondsInput {
+				width: 100px;
+				position: absolute;
+				top: 30px; /* Adjusted to appear below the FPS display */
+				left: 0px;
+			}
 		</style>
 	</head>
 	<body>
@@ -45,23 +62,28 @@
 					worker.postMessage({ type: "update" });
 				}, 100);
 
-				// FPS tracking
-				const fpsDisplay = document.createElement("div"); // Display element for FPS
-				fpsDisplay.style.width = "100px";
-				fpsDisplay.style.height = "50px";
-				fpsDisplay.style.position = "absolute";
-				fpsDisplay.style.top = "0px";
-				fpsDisplay.style.left = "0px";
-				fpsDisplay.style.color = "white";
-				fpsDisplay.style.fontSize = "20px";
-				fpsDisplay.style.fontFamily = "Arial";
-				fpsDisplay.style.textAlign = "center";
-				fpsDisplay.style.backgroundColor = "black";
+				// FPS Display
+				const fpsDisplay = document.createElement("div");
+				fpsDisplay.id = "fpsDisplay";
+				document.body.appendChild(fpsDisplay);
 				document.body.appendChild(fpsDisplay);
 				worker.addEventListener("message", (event) => {
 					if (event.data.type === "fps") {
 						fpsDisplay.innerHTML = event.data.fps.toFixed(2) + " FPS";
 					}
+				});
+
+				// Milliseconds Input Field
+				const secondsInput = document.createElement("input");
+				secondsInput.id = "secondsInput";
+				secondsInput.type = "number";
+				secondsInput.placeholder = "Enter seconds";
+				document.body.appendChild(secondsInput);
+				secondsInput.addEventListener("change", (event) => {
+					worker.postMessage({
+						type: "historySpan",
+						seconds: event.target.value,
+					});
 				});
 			});
 		</script>

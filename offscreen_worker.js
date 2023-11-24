@@ -6,6 +6,9 @@ let plotContext = null;
 let spectrumCanvas = null;
 let spectrumContext = null;
 let animationStared = false;
+let historySpan = 20;
+let animationFrameId = null;
+
 self.onmessage = function (event) {
 	if (event.data.type === "plotCanvas") {
 		plotCanvas = event.data.canvas;
@@ -21,6 +24,11 @@ self.onmessage = function (event) {
 			spectrumCanvas: spectrumCanvas,
 			spectrumContext: spectrumContext,
 		});
+	} else if (event.data.type === "historySpan") {
+		historySpan = event.data.seconds;
+		console.debug("History Span received", { historySpan });
+		cancelAnimationFrame(animationFrameId);
+		animationStared = false;
 	}
 	const ready = !!plotCanvas && !!spectrumCanvas;
 	if (!animationStared && ready) {
@@ -29,13 +37,20 @@ self.onmessage = function (event) {
 	}
 };
 
-var lastTime = (performance || Date).now();
-var frameCount = 0;
-// var fpsDisplay = document.createElement("div"); // Display element for FPS
-// document.body.appendChild(fpsDisplay);
+/**
+ * FPS Counter
+ */
+let lastTime = (performance || Date).now();
+let frameCount = 0;
 
+let startTime = (performance || Date).now();
+let totalFrames = 0;
 function beginFrame() {
 	// This would be empty in a minimal setup
+	totalFrames++;
+	const ellapsedTime = ((performance || Date).now() - startTime) / 1000;
+	const averageFPS = totalFrames / ellapsedTime;
+	return { averageFPS };
 }
 
 function endFrame() {
@@ -46,20 +61,24 @@ function endFrame() {
 		var fps = frameCount;
 		frameCount = 0;
 		lastTime = currentTime;
-
 		// Update display
 		self.postMessage({ type: "fps", fps: fps });
 	}
 }
 
 function animate() {
-	beginFrame();
+	const { averageFPS } = beginFrame();
+	const noFrames = historySpan * averageFPS;
+	console.debug("animate", { historySpan });
+
 	// monitored code goes here
 	drawPlot();
-	drawSpectrum();
+	drawSpectrum({ noFrames });
+
 	endFrame();
+
 	// Right before the next paint, trigger another redraw & rotation.
-	requestAnimationFrame(animate);
+	animationFrameId = requestAnimationFrame(animate);
 }
 
 let time = 0; // Global time variable
@@ -163,10 +182,11 @@ function drawOrigin() {
 }
 
 let prevSpectrumImageData = null;
-function drawSpectrum() {
+function drawSpectrum({ noFrames }) {
 	// draw new spectrum
-	const width = 1,
-		height = 20;
+	const width = 1;
+	// const lineHeight = Math.max(spectrumCanvas.height / noFrames, 1);
+	const lineHeight = spectrumCanvas.height / noFrames;
 	spectrumContext.clearRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
 	const { points, xmax } = stream();
 	const scaleX = d3
@@ -176,13 +196,13 @@ function drawSpectrum() {
 	for (let i = 0; i < points.length; i++) {
 		const point = points[i];
 		spectrumContext.beginPath();
-		spectrumContext.rect(scaleX(point.x), 0, width, height);
+		spectrumContext.rect(scaleX(point.x), 0, width, lineHeight);
 		spectrumContext.fillStyle = point.color;
 		spectrumContext.fill();
 	}
 
 	if (!!prevSpectrumImageData) {
-		spectrumContext.putImageData(prevSpectrumImageData, 0, height);
+		spectrumContext.putImageData(prevSpectrumImageData, 0, lineHeight);
 	}
 	prevSpectrumImageData = spectrumContext.getImageData(
 		0,
